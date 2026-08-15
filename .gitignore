@@ -1,0 +1,8 @@
+node_modules/
+dist/
+offline/
+public/
+qa/
+.impeccable/
+*.log
+.preview.*
