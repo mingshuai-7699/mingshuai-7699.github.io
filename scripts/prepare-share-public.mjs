@@ -19,11 +19,12 @@ const sharePublic = path.join(root, "public-share");
 const manifestPath = path.join(sourcePublic, "media-manifest.json");
 
 const heroFiles = [
-  "img_1786676805873_rcyg_PSD图层_01_背景无文字_去橙光无圆圈.png",
-  "img_1786676805873_rcyg_PSD图层_01_背景无文字.png",
-  "2026纯白数字_完全照图1_全画布5504x3072.png",
-  "主页海报_PSD图层_03_中间人物_去橙光.png",
-  "主页海报_PSD图层_03_中间人物.png",
+  "首页文字图层_其余全部文字与图标.png",
+  "首页标题图层_透明.png",
+  "首页人物_无橙光面罩_透明.png",
+  "首页人物_发光橙光面罩_透明.png",
+  "首页文字图层_连接线_透明.png",
+  "首页文字图层_三项白色服务卡片与连接线_透明.png",
 ];
 
 if (!existsSync(manifestPath)) {

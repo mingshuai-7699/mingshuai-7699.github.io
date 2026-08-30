@@ -12,20 +12,23 @@ import {
   VideoCamera,
   X,
 } from "@phosphor-icons/react";
+import { gsap } from "gsap";
 import CountUp from "./components/CountUp";
 import Masonry from "./components/Masonry";
 import SplitText from "./components/SplitText";
+import StrokeImage from "./components/StrokeImage";
 
 const INITIAL_BATCH = 28;
 const FILTERS = ["全部", "个人渲染作品", "电商设计", "视频动效", "Ai与IP设计"];
 const PORTFOLIO_CATEGORIES = new Set(FILTERS.slice(1));
 
 const HERO_ASSETS = {
-  background: "/media/主页/img_1786676805873_rcyg_PSD图层_01_背景无文字_去橙光无圆圈.png",
-  backgroundLit: "/media/主页/img_1786676805873_rcyg_PSD图层_01_背景无文字.png",
-  numbers: "/media/主页/2026纯白数字_完全照图1_全画布5504x3072.png",
-  person: "/media/主页/主页海报_PSD图层_03_中间人物_去橙光.png",
-  personLit: "/media/主页/主页海报_PSD图层_03_中间人物.png",
+  base: "/media/主页/首页文字图层_其余全部文字与图标.png",
+  title: "/media/主页/首页标题图层_透明.png",
+  person: "/media/主页/首页人物_无橙光面罩_透明.png",
+  personLit: "/media/主页/首页人物_发光橙光面罩_透明.png",
+  capabilityLines: "/media/主页/首页文字图层_连接线_透明.png",
+  capabilityCards: "/media/主页/首页文字图层_三项白色服务卡片与连接线_透明.png",
 };
 
 const PROJECTS = [
@@ -130,6 +133,8 @@ function MediaVisual({ entry, className = "", eager = false, controls = false, p
 function Hero() {
   const heroRef = useRef(null);
   const frameRef = useRef(0);
+  const capabilityRefs = useRef([]);
+  const [heroReady, setHeroReady] = useState(false);
 
   const updateLight = (event) => {
     const node = heroRef.current;
@@ -139,69 +144,111 @@ function Hero() {
       const rect = node.getBoundingClientRect();
       const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
       const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
-      node.style.setProperty("--light-x", `${x}%`);
-      node.style.setProperty("--light-y", `${y}%`);
-      node.style.setProperty("--parallax-x", `${(x - 50) * 0.08}px`);
-      node.style.setProperty("--parallax-y", `${(y - 50) * 0.05}px`);
-      node.style.setProperty("--light-opacity", "1");
+      node.style.setProperty("--pointer-x", `${x}%`);
+      node.style.setProperty("--pointer-y", `${y}%`);
+      node.style.setProperty("--parallax-x", `${(x - 50) * 0.045}px`);
+      node.style.setProperty("--parallax-y", `${(y - 50) * 0.028}px`);
     });
   };
 
   const resetLight = () => {
     const node = heroRef.current;
     if (!node) return;
-    node.style.setProperty("--light-x", "58%");
-    node.style.setProperty("--light-y", "36%");
+    node.style.setProperty("--pointer-x", "55%");
+    node.style.setProperty("--pointer-y", "42%");
     node.style.setProperty("--parallax-x", "0px");
     node.style.setProperty("--parallax-y", "0px");
-    node.style.setProperty("--light-opacity", ".58");
   };
 
-  useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
+  useEffect(() => {
+    let active = true;
+    const sources = [...new Set(Object.values(HERO_ASSETS).map(assetUrl))];
+    Promise.all(sources.map((src) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = resolve;
+      image.onerror = resolve;
+      image.src = src;
+    }))).then(() => {
+      if (active) setHeroReady(true);
+    });
+
+    return () => {
+      active = false;
+      cancelAnimationFrame(frameRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!heroReady) return undefined;
+    const cards = capabilityRefs.current.filter(Boolean);
+    if (!cards.length) return undefined;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set(cards, { autoAlpha: 1, scale: 1 });
+      return undefined;
+    }
+
+    const context = gsap.context(() => {
+      gsap.set(cards, { autoAlpha: 0, scale: 0.2 });
+      gsap.to(cards, {
+        autoAlpha: 1,
+        scale: 1,
+        duration: 0.72,
+        ease: "back.out(1.45)",
+        stagger: 0.13,
+        delay: 0.92,
+      });
+    }, heroRef);
+
+    return () => context.revert();
+  }, [heroReady]);
 
   return (
-    <section className="hero" id="top" ref={heroRef} onPointerMove={updateLight} onPointerLeave={resetLight} aria-label="作品集首页">
-      <img className="hero-layer hero-background" src={assetUrl(HERO_ASSETS.background)} alt="" aria-hidden="true" />
-      <img className="hero-layer hero-background-lit hero-light-mask" src={assetUrl(HERO_ASSETS.backgroundLit)} alt="" aria-hidden="true" />
-      <div className="hero-cursor-light" aria-hidden="true" />
-      <img className="hero-layer hero-numbers" src={assetUrl(HERO_ASSETS.numbers)} alt="" aria-hidden="true" />
-      <div className="hero-person-wrap" aria-hidden="true">
-        <img className="hero-layer hero-person" src={assetUrl(HERO_ASSETS.person)} alt="" />
-        <img className="hero-layer hero-person hero-person-lit hero-light-mask" src={assetUrl(HERO_ASSETS.personLit)} alt="" />
-      </div>
-      <div className="hero-vignette" aria-hidden="true" />
+    <section
+      className={`hero ${heroReady ? "is-ready" : ""}`}
+      id="top"
+      ref={heroRef}
+      onPointerMove={updateLight}
+      onPointerLeave={resetLight}
+      aria-label="作品集首页"
+      aria-busy={!heroReady}
+    >
+      <div className="hero-preloader" aria-hidden="true"><span /></div>
+      <img className="hero-art hero-art-base" src={assetUrl(HERO_ASSETS.base)} alt="" aria-hidden="true" />
+      <div className="hero-pointer-glow" aria-hidden="true" />
+      {heroReady && <StrokeImage className="hero-art-title" src={assetUrl(HERO_ASSETS.title)} label="2026作品集" />}
 
-      <nav className="hero-nav" aria-label="主导航">
-        <a className="wordmark" href="#top" data-reveal>LMS<span>●</span></a>
-        <div className="nav-links" data-reveal>
-          <a href="#about">关于</a>
-          <a href="#projects">作品方向</a>
-          <a href="#archive">作品库</a>
-          <a href="#contact">邮箱联系</a>
+      <div className="hero-person-stage" aria-hidden="true">
+        <img className="hero-art hero-person-off" src={assetUrl(HERO_ASSETS.person)} alt="" />
+        <img className="hero-art hero-person-on hero-person-spill" src={assetUrl(HERO_ASSETS.personLit)} alt="" />
+        <img className="hero-art hero-person-on hero-person-visor" src={assetUrl(HERO_ASSETS.personLit)} alt="" />
+      </div>
+
+      <img className="hero-art hero-capability-lines" src={assetUrl(HERO_ASSETS.capabilityLines)} alt="" aria-hidden="true" />
+
+      <nav className="hero-capabilities" aria-label="快速前往作品方向">
+        <div className="capability capability-render" ref={(node) => { capabilityRefs.current[0] = node; }} aria-hidden="true">
+          <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" />
         </div>
-        <span className="nav-year" data-reveal>©2026</span>
+        <div className="capability capability-commerce" ref={(node) => { capabilityRefs.current[1] = node; }} aria-hidden="true">
+          <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" />
+        </div>
+        <div className="capability capability-ai" ref={(node) => { capabilityRefs.current[2] = node; }} aria-hidden="true">
+          <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" />
+        </div>
+        <a className="capability-hit capability-hit-render" href="#project-01" aria-label="前往个人渲染作品" />
+        <a className="capability-hit capability-hit-commerce" href="#project-02" aria-label="前往电商设计作品" />
+        <a className="capability-hit capability-hit-ai" href="#project-03" aria-label="前往视频动效作品" />
       </nav>
 
-      <div className="hero-copy">
-        <p className="eyebrow" data-reveal>PRODUCT VISUAL DESIGNER</p>
-        <SplitText
-          tag="h1"
-          className="hero-title"
-          text={"以 3D、AI 与电商设计\n打造有说服力的产品视觉。"}
-          splitType="words, chars"
-          delay={34}
-          duration={0.85}
-          rootMargin="0px"
-        />
-      </div>
-
-      <a className="hero-contact" href="mailto:1617589399@qq.com" data-reveal>
-        邮箱联系 <ArrowUpRight weight="bold" />
-      </a>
-
-      <div className="hero-disciplines" aria-label="设计方向" data-reveal>
-        <span>3D RENDERING</span><span>E-COMMERCE</span><span>AI VISUAL</span><span>MOTION</span>
-      </div>
+      <h1 className="sr-only">李明帅 2026 作品集：3D 渲染、电商视觉、AI 与动效设计</h1>
+      <nav className="hero-hotspot-nav" aria-label="主导航">
+        <a href="#about">关于</a>
+        <a href="#projects">作品方向</a>
+        <a href="#archive">作品库</a>
+        <a href="#contact">邮箱联系</a>
+      </nav>
+      <a className="hero-email-hotspot" href="mailto:1617589399@qq.com" aria-label="发送邮件至 1617589399@qq.com" />
     </section>
   );
 }
@@ -292,7 +339,7 @@ function ProjectCard({ project, entries, onOpen, stackIndex }) {
   const media = pickProjectEntries(entries, project);
   const isEcommerce = project.category === "电商设计";
   return (
-    <article className={`project-card theme-${project.theme}`} style={{ "--stack-index": stackIndex }}>
+    <article className={`project-card theme-${project.theme}`} id={`project-${project.index}`} style={{ "--stack-index": stackIndex }}>
       <header className="project-header">
         <span className="project-number"><CountUp to={Number(project.index)} pad={2} duration={0.9} /></span>
         <div data-reveal><p>FEATURED DIRECTION / {project.index}</p><h3>{project.category}<span>{project.english}</span></h3></div>
