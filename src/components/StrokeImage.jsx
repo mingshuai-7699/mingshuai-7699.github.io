@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { gsap } from "gsap";
 
 const WIDTH = 3344;
@@ -10,12 +10,13 @@ export default function StrokeImage({ src, className = "", label = "" }) {
   const strokeImageRef = useRef(null);
   const fillRef = useRef(null);
   const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const [loadedSrc, setLoadedSrc] = useState("");
 
   useEffect(() => {
     const strokeClip = strokeClipRef.current;
     const strokeImage = strokeImageRef.current;
     const fill = fillRef.current;
-    if (!strokeClip || !strokeImage || !fill) return undefined;
+    if (!strokeClip || !strokeImage || !fill || loadedSrc !== src) return undefined;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
@@ -35,7 +36,7 @@ export default function StrokeImage({ src, className = "", label = "" }) {
       .to(strokeImage, { opacity: 0, duration: 0.35, ease: "power2.out" }, 1.45);
 
     return () => timeline.kill();
-  }, [src]);
+  }, [src, loadedSrc]);
 
   return (
     <span ref={rootRef} className={`stroke-image ${className}`.trim()} role="img" aria-label={label}>
@@ -62,7 +63,7 @@ export default function StrokeImage({ src, className = "", label = "" }) {
           filter={`url(#outline-${rawId})`}
           clipPath={`url(#stroke-clip-${rawId})`}
         />
-        <image href={src} width={WIDTH} height={HEIGHT} clipPath={`url(#fill-clip-${rawId})`} />
+        <image href={src} width={WIDTH} height={HEIGHT} clipPath={`url(#fill-clip-${rawId})`} onLoad={() => setLoadedSrc(src)} />
       </svg>
     </span>
   );

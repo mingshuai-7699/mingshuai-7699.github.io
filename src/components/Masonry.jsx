@@ -153,9 +153,9 @@ export default function Masonry({
         >
           <span className="masonry-item-media">
             {item.kind === "video" ? (
-              <video src={item.src} muted loop playsInline preload="metadata" />
+              <video src={item.src} poster={item.poster} muted loop playsInline preload="none" />
             ) : (
-              <img src={item.src} alt="" loading="lazy" decoding="async" />
+              <img src={item.src} srcSet={item.srcSet} sizes={`${Math.ceil(item.w)}px`} alt="" loading="lazy" decoding="async" />
             )}
             {colorShiftOnHover && <span className="masonry-color-overlay" />}
           </span>

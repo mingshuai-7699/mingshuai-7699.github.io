@@ -68,16 +68,13 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 }
 .hero-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; user-select: none; }
 .hero-art-base { z-index: 0; animation: hero-base-in .72s cubic-bezier(.16,1,.3,1) both; }
-.hero-preloader { position: absolute; z-index: 20; inset: 0; display: grid; place-items: center; background: #ececea; transition: opacity .28s ease, visibility .28s ease; }
+.hero-preloader { position: absolute; z-index: 20; inset: 0; display: grid; place-items: center; pointer-events: none; transition: opacity .28s ease, visibility .28s ease; }
 .hero-preloader span { width: 78px; height: 2px; overflow: hidden; border-radius: 999px; background: rgba(14,14,14,.12); }
 .hero-preloader span::after { content: ""; display: block; width: 42%; height: 100%; background: #ff622e; animation: hero-preload 1s ease-in-out infinite alternate; }
 .hero.is-ready .hero-preloader { opacity: 0; visibility: hidden; }
-.hero:not(.is-ready) .hero-art, .hero:not(.is-ready) .hero-pointer-glow, .hero:not(.is-ready) .hero-capabilities { visibility: hidden; }
-.hero:not(.is-ready) .hero-art-base,
-.hero:not(.is-ready) .hero-person-on,
-.hero:not(.is-ready) .capability,
-.hero:not(.is-ready) .capability-card,
-.hero:not(.is-ready) .hero-person-stage::after { animation-play-state: paused; }
+.hero:not(.is-ready) .hero-art-base { animation-play-state: paused; }
+.hero-person-stage:not(.is-lit-ready) .hero-person-on,
+.hero-person-stage:not(.is-lit-ready)::after { animation-play-state: paused; }
 .hero-pointer-glow {
   position: absolute;
   z-index: 1;
@@ -265,6 +262,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .lightbox-panel { width: min(1240px, 100%); max-height: calc(100vh - 100px); display: grid; grid-template-rows: minmax(0,1fr) auto; background: #0e0e0d; border: 1px solid var(--line); }
 .lightbox-media { min-height: 0; display: grid; place-items: center; overflow: hidden; background: #090909; }
 .lightbox-media img, .lightbox-media video { width: 100%; height: min(76vh, 820px); object-fit: contain; }
+.full-size-image { position: relative; width: 100%; }
+.full-size-preview { position: absolute; inset: 0; }
+.full-size-status { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); padding: 7px 12px; border-radius: 6px; background: #111c; color: #ddd; font-size: 12px; white-space: nowrap; }
 .lightbox-meta { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 20px; padding: 18px 22px; border-top: 1px solid var(--line); }
 .lightbox-meta > span { color: var(--orange); font: 600 12px/1 "Rajdhani"; }
 .lightbox-meta h3 { margin: 0 0 5px; font: 600 17px/1 "Rajdhani"; }

@@ -16,5 +16,15 @@ export default defineConfig(({ mode }) => ({
       clientFiles: ["./src/main.jsx"],
     },
   },
-  plugins: [react()],
+  plugins: [react(), {
+    name: "preload-share-hero",
+    transformIndexHtml() {
+      if (mode !== "share") return [];
+      return ["base", "person"].map((name) => ({
+        tag: "link",
+        attrs: { rel: "preload", as: "image", type: "image/webp", href: `/media/hero/${name}.webp`, fetchpriority: "high" },
+        injectTo: "head",
+      }));
+    },
+  }],
 }));

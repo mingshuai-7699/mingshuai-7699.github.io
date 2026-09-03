@@ -17,12 +17,20 @@ import CountUp from "./components/CountUp";
 import Masonry from "./components/Masonry";
 import SplitText from "./components/SplitText";
 import StrokeImage from "./components/StrokeImage";
+import { previewSrcSet } from "./media.mjs";
 
 const INITIAL_BATCH = 28;
 const FILTERS = ["全部", "个人渲染作品", "电商设计", "视频动效", "Ai与IP设计"];
 const PORTFOLIO_CATEGORIES = new Set(FILTERS.slice(1));
 
-const HERO_ASSETS = {
+const HERO_ASSETS = import.meta.env.MODE === "share" ? {
+  base: "/media/hero/base.webp",
+  title: "/media/hero/title.webp",
+  person: "/media/hero/person.webp",
+  personLit: "/media/hero/person-lit.webp",
+  capabilityLines: "/media/hero/lines.webp",
+  capabilityCards: "/media/hero/cards.webp",
+} : {
   base: "/media/主页/首页文字图层_其余全部文字与图标.png",
   title: "/media/主页/首页标题图层_透明.png",
   person: "/media/主页/首页人物_无橙光面罩_透明.png",
@@ -111,14 +119,15 @@ function useReveal(refreshKey) {
   }, [refreshKey]);
 }
 
-function MediaVisual({ entry, className = "", eager = false, controls = false, preview = false, original = false }) {
+function MediaVisual({ entry, className = "", eager = false, controls = false, preview = false, original = false, enabled = true, sizes = "(max-width: 760px) 90vw, 36vw" }) {
   if (!entry) return <div className={`media-placeholder ${className}`} />;
   if (entry.kind === "video") {
     return (
       <video
         className={className}
         src={assetUrl(entry.url)}
-        preload="metadata"
+        poster={assetUrl(entry.poster)}
+        preload={controls ? "metadata" : "none"}
         muted={preview}
         loop={preview}
         playsInline
@@ -127,7 +136,10 @@ function MediaVisual({ entry, className = "", eager = false, controls = false, p
     );
   }
   const source = original ? entry.url : entry.thumbnail || entry.url;
-  return <img className={className} src={assetUrl(source)} alt={niceName(entry)} loading={eager ? "eager" : "lazy"} decoding="async" />;
+  return <img className={className} src={enabled ? assetUrl(source) : undefined}
+    srcSet={enabled && !original ? previewSrcSet(entry, assetUrl) : undefined}
+    sizes={!original ? sizes : undefined} alt={niceName(entry)}
+    loading={eager ? "eager" : "lazy"} decoding="async" />;
 }
 
 function Hero() {
@@ -135,6 +147,9 @@ function Hero() {
   const frameRef = useRef(0);
   const capabilityRefs = useRef([]);
   const [heroReady, setHeroReady] = useState(false);
+  const [personReady, setPersonReady] = useState(false);
+  const [litReady, setLitReady] = useState(false);
+  const [cardsReady, setCardsReady] = useState(false);
 
   const updateLight = (event) => {
     const node = heroRef.current;
@@ -161,25 +176,11 @@ function Hero() {
   };
 
   useEffect(() => {
-    let active = true;
-    const sources = [...new Set(Object.values(HERO_ASSETS).map(assetUrl))];
-    Promise.all(sources.map((src) => new Promise((resolve) => {
-      const image = new Image();
-      image.onload = resolve;
-      image.onerror = resolve;
-      image.src = src;
-    }))).then(() => {
-      if (active) setHeroReady(true);
-    });
-
-    return () => {
-      active = false;
-      cancelAnimationFrame(frameRef.current);
-    };
+    return () => cancelAnimationFrame(frameRef.current);
   }, []);
 
   useEffect(() => {
-    if (!heroReady) return undefined;
+    if (!heroReady || !cardsReady) return undefined;
     const cards = capabilityRefs.current.filter(Boolean);
     if (!cards.length) return undefined;
 
@@ -201,7 +202,7 @@ function Hero() {
     }, heroRef);
 
     return () => context.revert();
-  }, [heroReady]);
+  }, [heroReady, cardsReady]);
 
   return (
     <section
@@ -214,21 +215,26 @@ function Hero() {
       aria-busy={!heroReady}
     >
       <div className="hero-preloader" aria-hidden="true"><span /></div>
-      <img className="hero-art hero-art-base" src={assetUrl(HERO_ASSETS.base)} alt="" aria-hidden="true" />
+      <img className="hero-art hero-art-base" src={assetUrl(HERO_ASSETS.base)} alt="" aria-hidden="true"
+        fetchPriority="high" decoding="async" onLoad={() => setHeroReady(true)} onError={() => setHeroReady(true)} />
       <div className="hero-pointer-glow" aria-hidden="true" />
-      {heroReady && <StrokeImage className="hero-art-title" src={assetUrl(HERO_ASSETS.title)} label="2026作品集" />}
+      <StrokeImage className="hero-art-title" src={assetUrl(HERO_ASSETS.title)} label="2026作品集" />
 
-      <div className="hero-person-stage" aria-hidden="true">
-        <img className="hero-art hero-person-off" src={assetUrl(HERO_ASSETS.person)} alt="" />
-        <img className="hero-art hero-person-on hero-person-spill" src={assetUrl(HERO_ASSETS.personLit)} alt="" />
-        <img className="hero-art hero-person-on hero-person-visor" src={assetUrl(HERO_ASSETS.personLit)} alt="" />
+      <div className={`hero-person-stage ${litReady ? "is-lit-ready" : ""}`} aria-hidden="true">
+        <img className="hero-art hero-person-off" src={assetUrl(HERO_ASSETS.person)} alt=""
+          fetchPriority="high" decoding="async" onLoad={() => setPersonReady(true)} />
+        {personReady && <>
+          <img className="hero-art hero-person-on hero-person-spill" src={assetUrl(HERO_ASSETS.personLit)} alt=""
+            decoding="async" onLoad={() => setLitReady(true)} />
+          <img className="hero-art hero-person-on hero-person-visor" src={assetUrl(HERO_ASSETS.personLit)} alt="" decoding="async" />
+        </>}
       </div>
 
       <img className="hero-art hero-capability-lines" src={assetUrl(HERO_ASSETS.capabilityLines)} alt="" aria-hidden="true" />
 
       <nav className="hero-capabilities" aria-label="快速前往作品方向">
         <div className="capability capability-render" ref={(node) => { capabilityRefs.current[0] = node; }} aria-hidden="true">
-          <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" />
+          <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" onLoad={() => setCardsReady(true)} />
         </div>
         <div className="capability capability-commerce" ref={(node) => { capabilityRefs.current[1] = node; }} aria-hidden="true">
           <img className="hero-art capability-card" src={assetUrl(HERO_ASSETS.capabilityCards)} alt="" />
@@ -253,14 +259,14 @@ function Hero() {
   );
 }
 
-function MarqueeRow({ entries, reverse = false }) {
+function MarqueeRow({ entries, reverse = false, active }) {
   const loopEntries = entries.length ? entries : [];
   return (
     <div className={`image-marquee-row ${reverse ? "reverse" : ""}`} aria-hidden="true">
-      <div className="image-marquee-rail">
+      <div className="image-marquee-rail" style={{ animationPlayState: active ? "running" : "paused" }}>
         {[0, 1].map((copy) => (
           <div className="image-marquee-set" key={copy}>
-            {loopEntries.map((entry) => <MediaVisual key={`${copy}-${entry.id}`} entry={entry} eager />)}
+            {loopEntries.map((entry) => <MediaVisual key={`${copy}-${entry.id}`} entry={entry} enabled={active} eager sizes="(max-width: 760px) 260px, 22vw" />)}
           </div>
         ))}
       </div>
@@ -269,6 +275,17 @@ function MarqueeRow({ entries, reverse = false }) {
 }
 
 function VisualMarquee({ entries }) {
+  const bandsRef = useRef(null);
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setActive(true);
+      observer.disconnect();
+    }, { rootMargin: "160px" });
+    observer.observe(bandsRef.current);
+    return () => observer.disconnect();
+  }, []);
   const midpoint = Math.ceil(entries.length / 2);
   const top = entries.slice(0, midpoint);
   const bottom = entries.slice(midpoint);
@@ -281,8 +298,10 @@ function VisualMarquee({ entries }) {
           <SplitText tag="span" className="outline-title" text="MAKE PRODUCTS FELT." splitType="chars" delay={20} duration={0.8} />
         </div>
       </div>
-      <MarqueeRow entries={top} />
-      <MarqueeRow entries={bottom} reverse />
+      <div ref={bandsRef}>
+        <MarqueeRow entries={top} active={active} />
+        <MarqueeRow entries={bottom} reverse active={active} />
+      </div>
     </section>
   );
 }
@@ -297,7 +316,7 @@ function About({ entries }) {
   const icons = iconNames.map((name) => entries.find((entry) => entry.category === "图标素材" && entry.name === name)).filter(Boolean);
   return (
     <section className="about" id="about">
-      {icons.map((entry, index) => <MediaVisual key={entry.id} entry={entry} original className={`about-icon icon-${index + 1}`} />)}
+      {icons.map((entry, index) => <MediaVisual key={entry.id} entry={{ ...entry, url: entry.thumbnailSmall || entry.url }} original className={`about-icon icon-${index + 1}`} />)}
       <div className="about-content" data-reveal>
         <p className="kicker">ABOUT / CREATIVE PROFILE</p>
         <div className="about-title" role="heading" aria-level="2">
@@ -420,6 +439,8 @@ function Archive({ entries, onOpen }) {
     return {
       id: entry.id,
       src: assetUrl(entry.kind === "video" ? entry.url : entry.thumbnail || entry.url),
+      srcSet: entry.kind === "image" ? previewSrcSet(entry, assetUrl) : undefined,
+      poster: assetUrl(entry.poster),
       kind: entry.kind,
       heightRatio,
       label: `查看 ${niceName(entry)}`,
@@ -490,6 +511,17 @@ function Contact() {
   );
 }
 
+function FullSizeImage({ entry }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return <div className="full-size-image" aria-busy={!loaded && !failed}>
+    {!loaded && <MediaVisual entry={entry} eager className="full-size-preview" />}
+    <img src={assetUrl(entry.url)} alt={niceName(entry)} decoding="async" fetchPriority="high"
+      style={{ opacity: loaded ? 1 : 0 }} onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />
+    {!loaded && <span className="full-size-status" role="status">{failed ? "高清图加载失败，可点击下方链接重试" : "高清图加载中…"}</span>}
+  </div>;
+}
+
 function Lightbox({ entry, entries, onClose, onChange }) {
   const index = entry ? entries.findIndex((item) => item.id === entry.id) : -1;
   const move = useCallback((direction) => {
@@ -517,11 +549,13 @@ function Lightbox({ entry, entries, onClose, onChange }) {
       <button className="lightbox-close" onClick={onClose} aria-label="关闭"><X /></button>
       <button className="lightbox-prev" onClick={() => move(-1)} aria-label="上一项"><CaretLeft /></button>
       <div className="lightbox-panel">
-        <div className="lightbox-media"><MediaVisual entry={entry} controls original /></div>
+        <div className="lightbox-media">{entry.kind === "image"
+          ? <FullSizeImage key={entry.id} entry={entry} />
+          : <MediaVisual key={entry.id} entry={entry} controls original eager />}</div>
         <div className="lightbox-meta">
           <span>{String(index + 1).padStart(3, "0")} / {entries.length}</span>
           <div><h3>{niceName(entry)}</h3><p>{entry.category} / {entry.kind === "video" ? "动态影像" : "视觉作品"}</p></div>
-          <a href={assetUrl(entry.url)} target="_blank" rel="noreferrer">查看原文件 <ArrowUpRight /></a>
+          <a href={assetUrl(entry.url)} target="_blank" rel="noreferrer">{entry.kind === "image" ? "查看原尺寸高清图" : "查看视频文件"} <ArrowUpRight /></a>
         </div>
       </div>
       <button className="lightbox-next" onClick={() => move(1)} aria-label="下一项"><CaretRight /></button>
@@ -553,10 +587,7 @@ export function App() {
       .catch((reason) => setError(reason.message));
   }, []);
 
-  if (error) return <div className="fatal-error"><X /><h1>{error}</h1><p>请检查媒体清单是否已生成。</p></div>;
-  if (!manifest) return <LoadingScreen />;
-
-  const entries = manifest.entries;
+  const entries = manifest?.entries || [];
   const portfolioEntries = entries.filter((entry) => PORTFOLIO_CATEGORIES.has(entry.category));
   const marqueeEntries = entries.filter((entry) => entry.category === "副业轮换" && entry.kind === "image");
 
@@ -564,10 +595,12 @@ export function App() {
     <>
       <Hero />
       <main>
+        {error ? <div className="fatal-error"><X /><h2>{error}</h2><p>请刷新重试。</p></div> : !manifest ? <LoadingScreen /> : <>
         <VisualMarquee entries={marqueeEntries} />
         <About entries={entries} />
         <FeaturedProjects entries={portfolioEntries} onOpen={setSelected} />
         <Archive entries={portfolioEntries} onOpen={setSelected} />
+        </>}
       </main>
       <Contact />
       <Lightbox entry={selected} entries={portfolioEntries} onClose={() => setSelected(null)} onChange={setSelected} />
