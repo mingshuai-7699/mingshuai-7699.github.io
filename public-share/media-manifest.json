@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-03",
+  "generatedAt": "2026-09-09",
   "source": "E:\\Codex文件夹\\网页设计\\作品集画廊",
-  "count": 285,
+  "count": 286,
   "imageCount": 275,
-  "videoCount": 10,
+  "videoCount": 11,
   "entries": [
     {
       "id": "99970c269b71",
@@ -5674,6 +5674,23 @@
       "thumbnailSmallWidth": 640,
       "thumbnailWidth": 1280,
       "losslessOriginal": true
+    },
+    {
+      "id": "de9c967550e4",
+      "kind": "video",
+      "name": "竖版_剃须刀",
+      "fileName": "竖版_剃须刀.mp4",
+      "url": "/media/videos/de9c967550e4.mp4",
+      "thumbnail": null,
+      "category": "视频动效",
+      "project": "视频动效",
+      "group": "视频动效",
+      "market": null,
+      "width": null,
+      "height": null,
+      "aspect": null,
+      "sizeBytes": 25128531,
+      "poster": "/media/posters/de9c967550e4.webp"
     }
   ],
   "shareOptimized": true
